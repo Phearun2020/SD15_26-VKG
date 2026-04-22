@@ -1,0 +1,299 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix rml: <http://semweb.mmlab.be/ns/rml#> .
+@prefix ql: <http://semweb.mmlab.be/ns/ql#> .
+@prefix ex: <http://example.com/ns#> .
+@prefix ont: <http://smis.itc.edu.kh/ontology#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<#HRPersonMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT *
+      FROM "@phearun".hr
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/hr-person/{salary_id}" ;
+    rr:class ex:HRPerson
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:hrId ;
+    rr:objectMap [ rml:reference "salary_id" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:hrEmail ;
+    rr:objectMap [ rml:reference "email" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:name ;
+    rr:objectMap [ rml:reference "kh_name" ; rr:language "kh" ] ;
+    rr:objectMap [ rml:reference "latin_name" ; rr:language "en" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate rdfs:label ;
+    rr:objectMap [ rml:reference "kh_name" ; rr:language "kh" ] ;
+    rr:objectMap [ rml:reference "latin_name" ; rr:language "en" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:phoneNumber ;
+    rr:objectMap [ rml:reference "phone" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:hasCanonicalRecord ;
+    rr:objectMap [
+      rr:template "http://smis.itc.edu.kh/data/canonical/{salary_id}" ;
+      rr:termType rr:IRI
+    ]
+  ] .
+
+<#CanonicalMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT DISTINCT
+        CONCAT(
+          'P_',
+          SPLIT_PART(LOWER(h.email), '@', 1),
+          '_',
+          SPLIT_PART(LOWER(h.email), '@', 2)
+        ) AS canonical_id,
+        h.salary_id AS hr_id,
+        LOWER(h.email) AS hr_email,
+        CAST(CAST(s.id AS INTEGER) AS VARCHAR) AS smis_id,
+        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id
+      FROM "@phearun".hr h
+      INNER JOIN smis.public.users s
+        ON LOWER(h.email) = LOWER(s.email)
+      INNER JOIN smis.public.employees e
+        ON s.id = e.user_id
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/canonical/{hr_id}" ;
+    rr:class ex:CanonicalPerson
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:canonicalId ;
+    rr:objectMap [ rml:reference "canonical_id" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:hrId ;
+    rr:objectMap [ rml:reference "hr_id" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:smisId ;
+    rr:objectMap [ rml:reference "smis_id" ; rr:datatype xsd:integer ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:linksHRPerson ;
+    rr:objectMap [
+      rr:template "http://smis.itc.edu.kh/data/hr-person/{hr_id}" ;
+      rr:termType rr:IRI
+    ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:linksEmployee ;
+    rr:objectMap [
+      rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}" ;
+      rr:termType rr:IRI
+    ]
+  ] .
+
+<#EmployeeMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT DISTINCT
+        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
+        CAST(CAST(s.id AS INTEGER) AS VARCHAR) AS smis_id,
+        h.salary_id AS hr_id,
+        e.name_kh AS kh_name,
+        e.name_latin AS latin_name,
+        e.email AS employee_email,
+        e.phone AS phone_number
+      FROM smis.public.employees e
+      INNER JOIN smis.public.users s
+        ON s.id = e.user_id
+      INNER JOIN "@phearun".hr h
+        ON LOWER(h.email) = LOWER(s.email)
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}" ;
+    rr:class ex:Employee
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:employeeId ;
+    rr:objectMap [ rml:reference "employee_id" ; rr:datatype xsd:integer ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:smisId ;
+    rr:objectMap [ rml:reference "smis_id" ; rr:datatype xsd:integer ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:email ;
+    rr:objectMap [ rml:reference "employee_email" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:name ;
+    rr:objectMap [ rml:reference "kh_name" ; rr:language "kh" ] ;
+    rr:objectMap [ rml:reference "latin_name" ; rr:language "en" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate rdfs:label ;
+    rr:objectMap [ rml:reference "kh_name" ; rr:language "kh" ] ;
+    rr:objectMap [ rml:reference "latin_name" ; rr:language "en" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:phoneNumber ;
+    rr:objectMap [ rml:reference "phone_number" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:hasCanonicalRecord ;
+    rr:objectMap [
+      rr:template "http://smis.itc.edu.kh/data/canonical/{hr_id}" ;
+      rr:termType rr:IRI
+    ]
+  ] .
+
+<#EmployeeDepartmentLinkMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT DISTINCT
+        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
+        CAST(CAST(COALESCE(de.department_id, e.department_id) AS INTEGER) AS VARCHAR) AS department_id
+      FROM smis.public.employees e
+      LEFT JOIN smis.public.department_employees de
+        ON e.id = de.employee_id
+      WHERE COALESCE(de.department_id, e.department_id) IS NOT NULL
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}"
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ont:hasDepartment ;
+    rr:objectMap [
+      rr:template "http://smis.itc.edu.kh/data/department/{department_id}" ;
+      rr:termType rr:IRI
+    ]
+  ] .
+
+<#EmployeeBranchLinkMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT DISTINCT
+        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
+        CAST(CAST(COALESCE(edb.branch_id, be.branch_id, e.branch_id) AS INTEGER) AS VARCHAR) AS branch_id
+      FROM smis.public.employees e
+      LEFT JOIN smis.public.department_employees de
+        ON e.id = de.employee_id
+      LEFT JOIN smis.public.employee_department_branches edb
+        ON de.id = edb.department_employee_id
+      LEFT JOIN smis.public.branch_employees be
+        ON e.id = be.employee_id
+      WHERE COALESCE(edb.branch_id, be.branch_id, e.branch_id) IS NOT NULL
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}"
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ont:hasBranch ;
+    rr:objectMap [
+      rr:template "http://smis.itc.edu.kh/data/branch/{branch_id}" ;
+      rr:termType rr:IRI
+    ]
+  ] .
+
+<#DepartmentMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT
+        CAST(CAST(dep.id AS INTEGER) AS VARCHAR) AS dep_id,
+        dep.name_kh AS dep_name_kh,
+        dep.name_en AS dep_name_en,
+        dep.code AS dep_code
+      FROM smis.public.departments dep
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/department/{dep_id}" ;
+    rr:class ont:Department
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate rdfs:label ;
+    rr:objectMap [ rml:reference "dep_code" ; rr:language "en" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ont:code ;
+    rr:objectMap [ rml:reference "dep_code" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ont:name ;
+    rr:objectMap [ rml:reference "dep_name_kh" ; rr:language "kh" ] ;
+    rr:objectMap [ rml:reference "dep_name_en" ; rr:language "en" ]
+  ] .
+
+<#BranchMap>
+  rr:logicalTable [
+    rr:sqlQuery """
+      SELECT
+        CAST(CAST(b.id AS INTEGER) AS VARCHAR) AS branch_id,
+        b.name_kh AS branch_name_kh,
+        b.name_en AS branch_name_en,
+        b.name_fr AS branch_name_fr,
+        b.code AS branch_code
+      FROM smis.public.branches b
+    """
+  ] ;
+
+  rr:subjectMap [
+    rr:template "http://smis.itc.edu.kh/data/branch/{branch_id}" ;
+    rr:class ont:Branch
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate rdfs:label ;
+    rr:objectMap [ rml:reference "branch_code" ; rr:language "en" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ont:code ;
+    rr:objectMap [ rml:reference "branch_code" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ont:name ;
+    rr:objectMap [ rml:reference "branch_name_kh" ; rr:language "kh" ] ;
+    rr:objectMap [ rml:reference "branch_name_en" ; rr:language "en" ] ;
+    rr:objectMap [ rml:reference "branch_name_fr" ; rr:language "fr" ]
+  ] .
