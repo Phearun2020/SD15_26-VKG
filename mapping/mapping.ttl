@@ -33,7 +33,7 @@
   ] ;
 
   rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/person/{canonical_id}" ;
+    rr:template "http://smis.itc.edu.kh/data/employee/{canonical_id}" ;
     rr:class ex:HRPerson ;
     rr:class ex:Employee
   ] ;
@@ -108,7 +108,7 @@
   ] ;
 
   rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/person/{canonical_id}"
+    rr:template "http://smis.itc.edu.kh/data/employee/{canonical_id}"
   ] ;
 
   rr:predicateObjectMap [
@@ -146,7 +146,7 @@
   ] ;
 
   rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/person/{canonical_id}"
+    rr:template "http://smis.itc.edu.kh/data/employee/{canonical_id}"
   ] ;
 
   rr:predicateObjectMap [

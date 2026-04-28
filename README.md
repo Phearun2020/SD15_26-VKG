@@ -1,25 +1,25 @@
 # HR-SMIS Knowledge Graph Demo
 
-This project demonstrates integration between HR data and SMIS data through one shared person entity identified by a generated `canonical_id`.
+This project demonstrates integration between HR data and SMIS data through one shared employee entity identified by a generated `canonical_id`.
 
 ## Flow
 
 1. Dremio federates HR and SMIS data.
 2. Morph-KGC queries Dremio directly.
-3. The mapping creates one shared person resource:
+3. The mapping creates one shared employee resource:
 
 ```ttl
-http://smis.itc.edu.kh/data/person/{canonical_id}
+http://smis.itc.edu.kh/data/employee/{canonical_id}
 ```
 
 4. HR and SMIS attributes are attached to that same subject.
-5. The shared person is linked to SMIS department and branch resources.
+5. The shared employee is linked to SMIS department and branch resources.
 
 ## Current RDF Model
 
 The main mapping is in [mapping/mapping.ttl](mapping/mapping.ttl).
 
-The shared person resource contains integrated attributes from both systems, including:
+The shared employee resource contains integrated attributes from both systems, including:
 
 ```ttl
 ex:canonicalId
@@ -186,4 +186,4 @@ pip install rdflib morph_kgc pandas sqlalchemy sqlalchemy_dremio
 - The Dremio Flight port is usually `32010`.
 - The Dremio web UI is usually available at `http://localhost:9047`.
 - If the HR table name changes in Dremio, update the SQL in [mapping/mapping.ttl](mapping/mapping.ttl).
-- Department and branch remain SMIS resources even though the person resource is shared.
+- Department and branch remain SMIS resources even though the employee resource is shared.
