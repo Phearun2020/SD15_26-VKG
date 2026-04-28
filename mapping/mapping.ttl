@@ -1,31 +1,70 @@
 @prefix rr: <http://www.w3.org/ns/r2rml#> .
 @prefix rml: <http://semweb.mmlab.be/ns/rml#> .
 @prefix ql: <http://semweb.mmlab.be/ns/ql#> .
-@prefix ex: <http://example.com/ns#> .
-@prefix ont: <http://smis.itc.edu.kh/ontology#> .
+@prefix ex: <http://smis.itc.edu.kh/ont#> .
+@prefix ont: <http://smis.itc.edu.kh/ont#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<#HRPersonMap>
+<#SharedPersonMap>
   rr:logicalTable [
     rr:sqlQuery """
-      SELECT *
-      FROM "@phearun".hr
+      SELECT DISTINCT
+        CONCAT(
+          'P_',
+          SPLIT_PART(LOWER(h.email), '@', 1),
+          '_',
+          SPLIT_PART(LOWER(h.email), '@', 2)
+        ) AS canonical_id,
+        h.salary_id AS hr_id,
+        LOWER(h.email) AS hr_email,
+        CAST(CAST(s.id AS INTEGER) AS VARCHAR) AS smis_id,
+        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
+        COALESCE(NULLIF(e.name_kh, ''), h.kh_name) AS kh_name,
+        COALESCE(NULLIF(e.name_latin, ''), h.latin_name) AS latin_name,
+        COALESCE(NULLIF(e.email, ''), LOWER(h.email)) AS email,
+        COALESCE(NULLIF(e.phone, ''), h.phone) AS phone_number
+      FROM "@phearun".hr h
+      INNER JOIN smis.public.users s
+        ON LOWER(h.email) = LOWER(s.email)
+      INNER JOIN smis.public.employees e
+        ON s.id = e.user_id
     """
   ] ;
 
   rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/hr-person/{salary_id}" ;
-    rr:class ex:HRPerson
+    rr:template "http://smis.itc.edu.kh/data/person/{canonical_id}" ;
+    rr:class ex:HRPerson ;
+    rr:class ex:Employee
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:canonicalId ;
+    rr:objectMap [ rml:reference "canonical_id" ]
   ] ;
 
   rr:predicateObjectMap [
     rr:predicate ex:hrId ;
-    rr:objectMap [ rml:reference "salary_id" ]
+    rr:objectMap [ rml:reference "hr_id" ]
   ] ;
 
   rr:predicateObjectMap [
     rr:predicate ex:hrEmail ;
+    rr:objectMap [ rml:reference "hr_email" ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:smisId ;
+    rr:objectMap [ rml:reference "smis_id" ; rr:datatype xsd:integer ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:employeeId ;
+    rr:objectMap [ rml:reference "employee_id" ; rr:datatype xsd:integer ]
+  ] ;
+
+  rr:predicateObjectMap [
+    rr:predicate ex:email ;
     rr:objectMap [ rml:reference "email" ]
   ] ;
 
@@ -43,18 +82,10 @@
 
   rr:predicateObjectMap [
     rr:predicate ex:phoneNumber ;
-    rr:objectMap [ rml:reference "phone" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:hasCanonicalRecord ;
-    rr:objectMap [
-      rr:template "http://smis.itc.edu.kh/data/canonical/{salary_id}" ;
-      rr:termType rr:IRI
-    ]
+    rr:objectMap [ rml:reference "phone_number" ]
   ] .
 
-<#CanonicalMap>
+<#SharedPersonDepartmentLinkMap>
   rr:logicalTable [
     rr:sqlQuery """
       SELECT DISTINCT
@@ -64,125 +95,12 @@
           '_',
           SPLIT_PART(LOWER(h.email), '@', 2)
         ) AS canonical_id,
-        h.salary_id AS hr_id,
-        LOWER(h.email) AS hr_email,
-        CAST(CAST(s.id AS INTEGER) AS VARCHAR) AS smis_id,
-        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id
+        CAST(CAST(COALESCE(de.department_id, e.department_id) AS INTEGER) AS VARCHAR) AS department_id
       FROM "@phearun".hr h
       INNER JOIN smis.public.users s
         ON LOWER(h.email) = LOWER(s.email)
       INNER JOIN smis.public.employees e
         ON s.id = e.user_id
-    """
-  ] ;
-
-  rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/canonical/{hr_id}" ;
-    rr:class ex:CanonicalPerson
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:canonicalId ;
-    rr:objectMap [ rml:reference "canonical_id" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:hrId ;
-    rr:objectMap [ rml:reference "hr_id" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:smisId ;
-    rr:objectMap [ rml:reference "smis_id" ; rr:datatype xsd:integer ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:linksHRPerson ;
-    rr:objectMap [
-      rr:template "http://smis.itc.edu.kh/data/hr-person/{hr_id}" ;
-      rr:termType rr:IRI
-    ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:linksEmployee ;
-    rr:objectMap [
-      rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}" ;
-      rr:termType rr:IRI
-    ]
-  ] .
-
-<#EmployeeMap>
-  rr:logicalTable [
-    rr:sqlQuery """
-      SELECT DISTINCT
-        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
-        CAST(CAST(s.id AS INTEGER) AS VARCHAR) AS smis_id,
-        h.salary_id AS hr_id,
-        e.name_kh AS kh_name,
-        e.name_latin AS latin_name,
-        e.email AS employee_email,
-        e.phone AS phone_number
-      FROM smis.public.employees e
-      INNER JOIN smis.public.users s
-        ON s.id = e.user_id
-      INNER JOIN "@phearun".hr h
-        ON LOWER(h.email) = LOWER(s.email)
-    """
-  ] ;
-
-  rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}" ;
-    rr:class ex:Employee
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:employeeId ;
-    rr:objectMap [ rml:reference "employee_id" ; rr:datatype xsd:integer ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:smisId ;
-    rr:objectMap [ rml:reference "smis_id" ; rr:datatype xsd:integer ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:email ;
-    rr:objectMap [ rml:reference "employee_email" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:name ;
-    rr:objectMap [ rml:reference "kh_name" ; rr:language "kh" ] ;
-    rr:objectMap [ rml:reference "latin_name" ; rr:language "en" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate rdfs:label ;
-    rr:objectMap [ rml:reference "kh_name" ; rr:language "kh" ] ;
-    rr:objectMap [ rml:reference "latin_name" ; rr:language "en" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:phoneNumber ;
-    rr:objectMap [ rml:reference "phone_number" ]
-  ] ;
-
-  rr:predicateObjectMap [
-    rr:predicate ex:hasCanonicalRecord ;
-    rr:objectMap [
-      rr:template "http://smis.itc.edu.kh/data/canonical/{hr_id}" ;
-      rr:termType rr:IRI
-    ]
-  ] .
-
-<#EmployeeDepartmentLinkMap>
-  rr:logicalTable [
-    rr:sqlQuery """
-      SELECT DISTINCT
-        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
-        CAST(CAST(COALESCE(de.department_id, e.department_id) AS INTEGER) AS VARCHAR) AS department_id
-      FROM smis.public.employees e
       LEFT JOIN smis.public.department_employees de
         ON e.id = de.employee_id
       WHERE COALESCE(de.department_id, e.department_id) IS NOT NULL
@@ -190,7 +108,7 @@
   ] ;
 
   rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}"
+    rr:template "http://smis.itc.edu.kh/data/person/{canonical_id}"
   ] ;
 
   rr:predicateObjectMap [
@@ -201,13 +119,22 @@
     ]
   ] .
 
-<#EmployeeBranchLinkMap>
+<#SharedPersonBranchLinkMap>
   rr:logicalTable [
     rr:sqlQuery """
       SELECT DISTINCT
-        CAST(CAST(e.id AS INTEGER) AS VARCHAR) AS employee_id,
+        CONCAT(
+          'P_',
+          SPLIT_PART(LOWER(h.email), '@', 1),
+          '_',
+          SPLIT_PART(LOWER(h.email), '@', 2)
+        ) AS canonical_id,
         CAST(CAST(COALESCE(edb.branch_id, be.branch_id, e.branch_id) AS INTEGER) AS VARCHAR) AS branch_id
-      FROM smis.public.employees e
+      FROM "@phearun".hr h
+      INNER JOIN smis.public.users s
+        ON LOWER(h.email) = LOWER(s.email)
+      INNER JOIN smis.public.employees e
+        ON s.id = e.user_id
       LEFT JOIN smis.public.department_employees de
         ON e.id = de.employee_id
       LEFT JOIN smis.public.employee_department_branches edb
@@ -219,7 +146,7 @@
   ] ;
 
   rr:subjectMap [
-    rr:template "http://smis.itc.edu.kh/data/employee/{employee_id}"
+    rr:template "http://smis.itc.edu.kh/data/person/{canonical_id}"
   ] ;
 
   rr:predicateObjectMap [
